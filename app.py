@@ -753,6 +753,54 @@ fazer_backup()
 
 
 # =========================================================
+# AUTENTICAÇÃO
+# =========================================================
+USUARIOS = dict(st.secrets.get("usuarios", {
+    "gestor":      "gestor123",
+    "colaborador": "colab123",
+}))
+
+def tela_login():
+    st.markdown(
+        """
+        <div style="display:flex;justify-content:center;align-items:center;min-height:60vh;">
+        <div style="background:#161b27;border:1px solid #1f2535;border-radius:10px;
+                    padding:40px 48px;min-width:360px;max-width:420px;width:100%;">
+            <div style="text-align:center;margin-bottom:28px;">
+                <div style="font-size:2rem;margin-bottom:8px;">📋</div>
+                <div style="font-size:1.1rem;font-weight:700;color:#dde1f0;">
+                    Sistema de Gestão de Atividades
+                </div>
+                <div style="font-size:0.75rem;color:#5e6484;margin-top:4px;">
+                    Acesso restrito — faça login para continuar
+                </div>
+            </div>
+        </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    _, col, _ = st.columns([1, 2, 1])
+    with col:
+        with st.form("form_login", clear_on_submit=False):
+            usuario = st.text_input("Usuário", key="login_usuario")
+            senha   = st.text_input("Senha",   key="login_senha", type="password")
+            entrar  = st.form_submit_button("Entrar", use_container_width=True)
+
+        if entrar:
+            if usuario in USUARIOS and USUARIOS[usuario] == senha:
+                st.session_state["autenticado"]    = True
+                st.session_state["usuario_logado"] = usuario
+                st.rerun()
+            else:
+                st.error("Usuário ou senha incorretos.")
+
+if not st.session_state.get("autenticado"):
+    tela_login()
+    st.stop()
+
+# =========================================================
 # NAVEGAÇÃO
 # =========================================================
 if "pagina" not in st.session_state:
@@ -768,11 +816,10 @@ for _chave, _padrao in [
     if _chave not in st.session_state:
         st.session_state[_chave] = _padrao
 
-col1, col2, col3, col4, col5, col6 = st.columns(6)
+_pag_ativa      = st.session_state.get("pagina", "Dashboard")
+_usuario_logado = st.session_state.get("usuario_logado", "")
 
-_pag_ativa = st.session_state.get("pagina", "Dashboard")
-
-# Conta pendências para o badge do botão Aprovações
+# Conta pendências
 _df_nav = listar()
 _pendencias = 0
 if not _df_nav.empty:
@@ -782,29 +829,44 @@ if not _df_nav.empty:
     )
 _label_aprov = f"Aprovações ({_pendencias})" if _pendencias > 0 else "Aprovações do Gestor"
 
-col1, col2, col3, col4, col5, col6 = st.columns(6)
+# Usuário + link sair acima da nav
+st.markdown(
+    f'<div style="font-size:0.65rem;color:#5e6484;margin-bottom:4px;">'
+    f'&#128100; <b style="color:#dde1f0;">{_usuario_logado.upper()}</b>'
+    f'&nbsp;&nbsp;<a href="?sair=1" target="_self" style="color:#c94f4f;text-decoration:none;font-weight:600;">sair</a>'
+    f'</div>',
+    unsafe_allow_html=True,
+)
 
-_label_aprov = f"Aprovações ({_pendencias})" if _pendencias > 0 else "Aprovações do Gestor"
+# Detecta clique no link sair via query param
+if st.query_params.get("sair") == "1":
+    for _k in ["autenticado", "usuario_logado", "pagina"]:
+        st.session_state.pop(_k, None)
+    st.query_params.clear()
+    st.rerun()
+
+# Barra de navegação
+col1, col2, col3, col4, col5, col6 = st.columns(6)
 
 with col1:
     if st.button("Dashboard",            use_container_width=True,
-                 type="primary" if _pag_ativa == "Dashboard"   else "secondary"):
+                 type="primary" if _pag_ativa == "Dashboard"  else "secondary"):
         st.session_state.pagina = "Dashboard"
 with col2:
     if st.button(_label_aprov,           use_container_width=True,
-                 type="primary" if _pag_ativa == "Aprovações"  else "secondary"):
+                 type="primary" if _pag_ativa == "Aprovações" else "secondary"):
         st.session_state.pagina = "Aprovações"
 with col3:
     if st.button("Atualizar Atividades", use_container_width=True,
-                 type="primary" if _pag_ativa == "Atualizar"   else "secondary"):
+                 type="primary" if _pag_ativa == "Atualizar"  else "secondary"):
         st.session_state.pagina = "Atualizar"
 with col4:
     if st.button("Nova Atividade",       use_container_width=True,
-                 type="primary" if _pag_ativa == "Nova"        else "secondary"):
+                 type="primary" if _pag_ativa == "Nova"       else "secondary"):
         st.session_state.pagina = "Nova"
 with col5:
     if st.button("Simular Atividade",    use_container_width=True,
-                 type="primary" if _pag_ativa == "Simulador"   else "secondary"):
+                 type="primary" if _pag_ativa == "Simulador"  else "secondary"):
         st.session_state.pagina = "Simulador"
 with col6:
     with st.popover("Outros  ▾", use_container_width=True):
