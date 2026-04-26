@@ -1,0 +1,11 @@
+# Senhas e segredos — NUNCA subir ao GitHub
+.streamlit/secrets.toml
+.env
+
+# Banco de dados local
+*.db
+backups/
+
+# Python
+__pycache__/
+*.pyc
