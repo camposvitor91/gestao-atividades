@@ -81,7 +81,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-st.title("📋 SISTEMA DE GESTÃO DE ATIVIDADES")
+
 
 
 # =========================================================
@@ -495,6 +495,7 @@ if not st.session_state.get("autenticado"):
     tela_login()
     st.stop()
 
+st.title("📋 SISTEMA DE GESTÃO DE ATIVIDADES")
 
 # =========================================================
 # NAVEGAÇÃO
